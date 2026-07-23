@@ -14,7 +14,15 @@ const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json());
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) =>
+  res.json({
+    status: 'ok',
+    hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+    databaseUrlLength: (process.env.DATABASE_URL || '').length,
+    hasJwtSecret: Boolean(process.env.JWT_SECRET),
+    corsOrigin: process.env.CORS_ORIGIN || null,
+  })
+);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/organizations', organizationRoutes);
