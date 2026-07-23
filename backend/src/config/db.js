@@ -1,26 +1,18 @@
-import sql from 'mssql';
+import pg from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const config = {
-  server: process.env.DB_SERVER,
-  port: Number(process.env.DB_PORT) || 1433,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  options: {
-    encrypt: process.env.DB_ENCRYPT === 'true',
-    trustServerCertificate: process.env.DB_TRUST_SERVER_CERT !== 'false',
-  },
-};
+const { Pool } = pg;
 
-let pool;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
-export async function getPool() {
-  if (pool) return pool;
-  pool = await sql.connect(config);
-  return pool;
+export async function query(text, params) {
+  const result = await pool.query(text, params);
+  return result.rows;
 }
 
-export { sql };
+export { pool };

@@ -1,14 +1,12 @@
 # Deploying Taskify for free
 
-This sets up a 100% free hosting stack for Taskify, with auto-deploy on every `git push` so future feature updates go live automatically.
+This sets up a 100% free hosting stack for Taskify, no card required anywhere, with auto-deploy on every `git push` so future feature updates go live automatically.
 
 | Piece | Service | Why |
 |---|---|---|
 | Frontend (PWA) | **Vercel** | Free forever, auto HTTPS, free `*.vercel.app` subdomain, great for Vite/React |
 | Backend API | **Render** | Free web service (sleeps after 15 min idle, wakes on next request in ~30-50s) |
-| Database | **Azure SQL Database — Free Offer** | One database per Azure account free forever (32GB storage, 100K vCore-seconds/month) — no code changes needed, same SQL Server engine we already built for |
-
-> Note: Azure signup usually asks for a card for identity verification, but you will not be charged as long as you stay on the free-tier database (don't attach it to a paid tier). If you'd rather avoid entering a card anywhere, tell me and I can migrate the backend from SQL Server to a card-free free database (e.g. Supabase/Neon Postgres) — it's a backend-only change, nothing else is affected.
+| Database | **Neon** (serverless PostgreSQL) | Free forever, no card required, autosuspends when idle and wakes automatically on the next query (no data loss) |
 
 ---
 
@@ -23,17 +21,20 @@ This sets up a 100% free hosting stack for Taskify, with auto-deploy on every `g
    git push -u origin main
    ```
 
-## 2. Create the free Azure SQL Database
+## 2. Create the free Neon Postgres database
 
-1. Sign up / log in at portal.azure.com.
-2. **Create a resource → SQL Database**.
-3. During creation, choose **"Free offer"** when prompted for compute tier (or select General Purpose Serverless and enable the free offer toggle) — this gives one free database per account.
-4. Set a server admin username/password (save these).
-5. Under the SQL Server resource → **Networking**, add a firewall rule **"Allow Azure services and resources to access this server"** = ON (so Render can reach it).
-6. Copy the **server name** (looks like `yourserver.database.windows.net`).
-7. Connect to it (e.g. via Azure's built-in Query Editor in the portal, or `sqlcmd -S yourserver.database.windows.net -U <admin> -P <password> -d <dbname>`) and run:
-   - [backend/sql/schema.sql](backend/sql/schema.sql)
-   - [backend/sql/create-app-login.sql](backend/sql/create-app-login.sql) (edit the placeholder password first — this creates a low-privilege app login instead of using the admin account in production)
+1. Sign up at neon.tech (free, no card).
+2. Create a project, e.g. "Taskify".
+3. Copy the **connection string** from the dashboard — looks like:
+   ```
+   postgresql://user:password@ep-xxxx.neon.tech/dbname?sslmode=require
+   ```
+4. Apply the schema — either paste [backend/sql/schema.sql](backend/sql/schema.sql) into Neon's built-in SQL Editor in the dashboard, or from your machine:
+   ```bash
+   cd backend
+   # with DATABASE_URL set in backend/.env
+   npm run db:schema
+   ```
 
 ## 3. Deploy the backend to Render
 
@@ -45,13 +46,7 @@ This sets up a 100% free hosting stack for Taskify, with auto-deploy on every `g
    - Plan: **Free**
 4. Add environment variables (Render dashboard → Environment):
    ```
-   DB_SERVER=yourserver.database.windows.net
-   DB_PORT=1433
-   DB_NAME=Taskify
-   DB_USER=taskify_app
-   DB_PASSWORD=<the password you set>
-   DB_ENCRYPT=true
-   DB_TRUST_SERVER_CERT=false
+   DATABASE_URL=<your Neon connection string>
    JWT_SECRET=<generate a new long random string>
    JWT_EXPIRES_IN=7d
    CORS_ORIGIN=<your Vercel URL — add this after step 4>

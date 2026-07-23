@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { getPool, sql } from '../config/db.js';
+import { query } from '../config/db.js';
 
 // Org Admin only: create an employee inside their own organization
 export async function createEmployee(req, res) {
@@ -8,44 +8,30 @@ export async function createEmployee(req, res) {
     return res.status(400).json({ message: 'name, email and password are required' });
   }
 
-  const pool = await getPool();
-
-  const existing = await pool
-    .request()
-    .input('email', sql.NVarChar, email)
-    .query('SELECT id FROM Users WHERE email = @email');
-  if (existing.recordset.length) {
+  const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
+  if (existing.length) {
     return res.status(409).json({ message: 'A user with this email already exists' });
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const result = await pool
-    .request()
-    .input('name', sql.NVarChar, name)
-    .input('email', sql.NVarChar, email)
-    .input('passwordHash', sql.NVarChar, passwordHash)
-    .input('phone', sql.NVarChar, phone || null)
-    .input('orgId', sql.Int, req.user.organizationId)
-    .query(
-      `INSERT INTO Users (name, email, password_hash, role, phone_number, organization_id)
-       OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.phone_number, INSERTED.created_at
-       VALUES (@name, @email, @passwordHash, 'employee', @phone, @orgId)`
-    );
+  const employees = await query(
+    `INSERT INTO users (name, email, password_hash, role, phone_number, organization_id)
+     VALUES ($1, $2, $3, 'employee', $4, $5)
+     RETURNING id, name, email, phone_number, created_at`,
+    [name, email, passwordHash, phone || null, req.user.organizationId]
+  );
 
-  res.status(201).json({ employee: result.recordset[0] });
+  res.status(201).json({ employee: employees[0] });
 }
 
 // Org Admin only: list employees in their own organization
 export async function listEmployees(req, res) {
-  const pool = await getPool();
-  const result = await pool
-    .request()
-    .input('orgId', sql.Int, req.user.organizationId)
-    .query(
-      `SELECT id, name, email, phone_number, created_at
-       FROM Users
-       WHERE organization_id = @orgId AND role = 'employee'
-       ORDER BY created_at DESC`
-    );
-  res.json(result.recordset);
+  const employees = await query(
+    `SELECT id, name, email, phone_number, created_at
+     FROM users
+     WHERE organization_id = $1 AND role = 'employee'
+     ORDER BY created_at DESC`,
+    [req.user.organizationId]
+  );
+  res.json(employees);
 }

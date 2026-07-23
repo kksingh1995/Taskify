@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { getPool, sql } from '../config/db.js';
+import { query } from '../config/db.js';
 
 export async function login(req, res) {
   const { email, password } = req.body;
@@ -8,13 +8,8 @@ export async function login(req, res) {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
-  const pool = await getPool();
-  const result = await pool
-    .request()
-    .input('email', sql.NVarChar, email)
-    .query('SELECT * FROM Users WHERE email = @email');
-
-  const user = result.recordset[0];
+  const users = await query('SELECT * FROM users WHERE email = $1', [email]);
+  const user = users[0];
   if (!user) {
     return res.status(401).json({ message: 'Invalid email or password' });
   }
@@ -25,11 +20,8 @@ export async function login(req, res) {
   }
 
   if (user.role !== 'super_admin') {
-    const org = await pool
-      .request()
-      .input('id', sql.Int, user.organization_id)
-      .query('SELECT status FROM Organizations WHERE id = @id');
-    if (org.recordset[0]?.status === 'Suspended') {
+    const orgs = await query('SELECT status FROM organizations WHERE id = $1', [user.organization_id]);
+    if (orgs[0]?.status === 'Suspended') {
       return res.status(403).json({ message: 'Your organization has been suspended' });
     }
   }

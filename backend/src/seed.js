@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
-import { getPool, sql } from './config/db.js';
+import { query, pool } from './config/db.js';
 
 dotenv.config();
 
@@ -10,29 +10,21 @@ async function seed() {
     throw new Error('SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD must be set in .env');
   }
 
-  const pool = await getPool();
-  const existing = await pool
-    .request()
-    .input('email', sql.NVarChar, SUPER_ADMIN_EMAIL)
-    .query('SELECT id FROM Users WHERE email = @email');
-
-  if (existing.recordset.length) {
+  const existing = await query('SELECT id FROM users WHERE email = $1', [SUPER_ADMIN_EMAIL]);
+  if (existing.length) {
     console.log('Super Admin already exists, skipping.');
     return process.exit(0);
   }
 
   const passwordHash = await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10);
-  await pool
-    .request()
-    .input('name', sql.NVarChar, SUPER_ADMIN_NAME || 'Super Admin')
-    .input('email', sql.NVarChar, SUPER_ADMIN_EMAIL)
-    .input('passwordHash', sql.NVarChar, passwordHash)
-    .query(
-      `INSERT INTO Users (name, email, password_hash, role, organization_id)
-       VALUES (@name, @email, @passwordHash, 'super_admin', NULL)`
-    );
+  await query(
+    `INSERT INTO users (name, email, password_hash, role, organization_id)
+     VALUES ($1, $2, $3, 'super_admin', NULL)`,
+    [SUPER_ADMIN_NAME || 'Super Admin', SUPER_ADMIN_EMAIL, passwordHash]
+  );
 
   console.log(`Super Admin created: ${SUPER_ADMIN_EMAIL}`);
+  await pool.end();
   process.exit(0);
 }
 

@@ -1,43 +1,42 @@
--- Taskify SQL Server schema
--- Run this once against your target database (create the database first, e.g. CREATE DATABASE Taskify;)
+-- Taskify PostgreSQL schema (run once against your Neon/Postgres database)
 
-IF OBJECT_ID('dbo.Tasks', 'U') IS NOT NULL DROP TABLE dbo.Tasks;
-IF OBJECT_ID('dbo.Users', 'U') IS NOT NULL DROP TABLE dbo.Users;
-IF OBJECT_ID('dbo.Organizations', 'U') IS NOT NULL DROP TABLE dbo.Organizations;
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS organizations;
 
-CREATE TABLE dbo.Organizations (
-    id              INT IDENTITY(1,1) PRIMARY KEY,
-    name            NVARCHAR(150)   NOT NULL,
-    type            NVARCHAR(50)    NULL,            -- School / College / Business / Other
-    status          NVARCHAR(20)    NOT NULL DEFAULT 'Active',  -- Active / Suspended
-    created_by      INT             NULL,            -- super_admin user id
-    created_at      DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME()
+CREATE TABLE organizations (
+    id              SERIAL PRIMARY KEY,
+    name            VARCHAR(150)  NOT NULL,
+    type            VARCHAR(50),                          -- School / College / Business / Other
+    status          VARCHAR(20)   NOT NULL DEFAULT 'Active',  -- Active / Suspended
+    created_by      INTEGER,                               -- super_admin user id
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 
-CREATE TABLE dbo.Users (
-    id              INT IDENTITY(1,1) PRIMARY KEY,
-    name            NVARCHAR(100)   NOT NULL,
-    email           NVARCHAR(150)   NOT NULL UNIQUE,
-    password_hash   NVARCHAR(255)   NOT NULL,
-    role            NVARCHAR(20)    NOT NULL,        -- super_admin / org_admin / employee
-    phone_number    NVARCHAR(20)    NULL,            -- for WhatsApp share (include country code, e.g. 91XXXXXXXXXX)
-    organization_id INT             NULL REFERENCES dbo.Organizations(id),
-    created_at      DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME()
+CREATE TABLE users (
+    id              SERIAL PRIMARY KEY,
+    name            VARCHAR(100)  NOT NULL,
+    email           VARCHAR(150)  NOT NULL UNIQUE,
+    password_hash   VARCHAR(255)  NOT NULL,
+    role            VARCHAR(20)   NOT NULL,                -- super_admin / org_admin / employee
+    phone_number    VARCHAR(20),                           -- for WhatsApp share (include country code, e.g. 91XXXXXXXXXX)
+    organization_id INTEGER       REFERENCES organizations(id),
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 
-CREATE TABLE dbo.Tasks (
-    id              INT IDENTITY(1,1) PRIMARY KEY,
-    title           NVARCHAR(200)   NOT NULL,
-    description     NVARCHAR(MAX)   NULL,
-    priority        NVARCHAR(10)    NOT NULL DEFAULT 'Medium',  -- Low / Medium / High
-    due_date        DATE            NULL,
-    status          NVARCHAR(20)    NOT NULL DEFAULT 'Pending', -- Pending / In Progress / Completed
-    organization_id INT             NOT NULL REFERENCES dbo.Organizations(id),
-    assigned_to     INT             NOT NULL REFERENCES dbo.Users(id),
-    created_by      INT             NOT NULL REFERENCES dbo.Users(id),
-    created_at      DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME()
+CREATE TABLE tasks (
+    id              SERIAL PRIMARY KEY,
+    title           VARCHAR(200)  NOT NULL,
+    description     TEXT,
+    priority        VARCHAR(10)   NOT NULL DEFAULT 'Medium',  -- Low / Medium / High
+    due_date        DATE,
+    status          VARCHAR(20)   NOT NULL DEFAULT 'Pending', -- Pending / In Progress / Completed
+    organization_id INTEGER       NOT NULL REFERENCES organizations(id),
+    assigned_to     INTEGER       NOT NULL REFERENCES users(id),
+    created_by      INTEGER       NOT NULL REFERENCES users(id),
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IX_Users_Organization ON dbo.Users(organization_id);
-CREATE INDEX IX_Tasks_Organization ON dbo.Tasks(organization_id);
-CREATE INDEX IX_Tasks_AssignedTo ON dbo.Tasks(assigned_to);
+CREATE INDEX idx_users_organization ON users(organization_id);
+CREATE INDEX idx_tasks_organization ON tasks(organization_id);
+CREATE INDEX idx_tasks_assigned_to ON tasks(assigned_to);

@@ -11,21 +11,25 @@ Multi-organization, role-based task management platform.
 
 ```
 Taskify/
-  backend/    Node.js + Express + SQL Server API
+  backend/    Node.js + Express + PostgreSQL API
   frontend/   React (Vite) + Tailwind + PWA
 ```
 
-## 1. Database setup (SQL Server)
+## 1. Database setup (PostgreSQL / Neon)
 
-1. Create a database (e.g. `Taskify`) on your SQL Server instance.
-2. Run [backend/sql/schema.sql](backend/sql/schema.sql) against it — creates `Organizations`, `Users`, `Tasks` tables.
+1. Create a free Postgres database at [neon.tech](https://neon.tech) (or point at any Postgres instance) and copy its connection string.
+2. Put it in `backend/.env` as `DATABASE_URL`, then run:
+   ```bash
+   cd backend
+   npm run db:schema   # applies backend/sql/schema.sql — creates organizations, users, tasks tables
+   ```
 
 ## 2. Backend setup
 
 ```bash
 cd backend
 npm install
-cp .env.example .env      # then edit DB_SERVER, DB_USER, DB_PASSWORD, JWT_SECRET, etc.
+cp .env.example .env      # then edit DATABASE_URL, JWT_SECRET, etc.
 npm run seed               # creates the first Super Admin account (from SUPER_ADMIN_* in .env)
 npm run dev                 # starts API on http://localhost:5000
 ```
@@ -69,5 +73,4 @@ The app icon, name, and theme color come from `frontend/vite.config.js` (`VitePW
 ## Security notes for production
 
 - Change `JWT_SECRET` and all default passwords before deploying.
-- Set `DB_ENCRYPT=true` if connecting to Azure SQL or any TLS-enabled SQL Server.
 - Serve the frontend over HTTPS — PWA install and service workers require a secure context (except `localhost`).

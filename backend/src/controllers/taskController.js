@@ -1,4 +1,4 @@
-import { getPool, sql } from '../config/db.js';
+import { query } from '../config/db.js';
 
 const PRIORITIES = ['Low', 'Medium', 'High'];
 const STATUSES = ['Pending', 'In Progress', 'Completed'];
@@ -13,73 +13,54 @@ export async function createTask(req, res) {
     return res.status(400).json({ message: `priority must be one of ${PRIORITIES.join(', ')}` });
   }
 
-  const pool = await getPool();
-
-  const assignee = await pool
-    .request()
-    .input('id', sql.Int, assignedTo)
-    .input('orgId', sql.Int, req.user.organizationId)
-    .query("SELECT id FROM Users WHERE id = @id AND organization_id = @orgId AND role = 'employee'");
-  if (!assignee.recordset.length) {
+  const assignee = await query(
+    "SELECT id FROM users WHERE id = $1 AND organization_id = $2 AND role = 'employee'",
+    [assignedTo, req.user.organizationId]
+  );
+  if (!assignee.length) {
     return res.status(400).json({ message: 'assignedTo must be an employee in your organization' });
   }
 
-  const result = await pool
-    .request()
-    .input('title', sql.NVarChar, title)
-    .input('description', sql.NVarChar, description || null)
-    .input('priority', sql.NVarChar, priority || 'Medium')
-    .input('dueDate', sql.Date, dueDate || null)
-    .input('orgId', sql.Int, req.user.organizationId)
-    .input('assignedTo', sql.Int, assignedTo)
-    .input('createdBy', sql.Int, req.user.id)
-    .query(
-      `INSERT INTO Tasks (title, description, priority, due_date, organization_id, assigned_to, created_by)
-       OUTPUT INSERTED.*
-       VALUES (@title, @description, @priority, @dueDate, @orgId, @assignedTo, @createdBy)`
-    );
+  const tasks = await query(
+    `INSERT INTO tasks (title, description, priority, due_date, organization_id, assigned_to, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING *`,
+    [title, description || null, priority || 'Medium', dueDate || null, req.user.organizationId, assignedTo, req.user.id]
+  );
 
-  res.status(201).json({ task: result.recordset[0] });
+  res.status(201).json({ task: tasks[0] });
 }
 
 // Org Admin: all tasks in their organization. Employee: only tasks assigned to them.
 export async function listTasks(req, res) {
-  const pool = await getPool();
-
   if (req.user.role === 'employee') {
-    const result = await pool
-      .request()
-      .input('userId', sql.Int, req.user.id)
-      .query(
-        `SELECT t.*, u.name AS assignedToName
-         FROM Tasks t
-         JOIN Users u ON u.id = t.assigned_to
-         WHERE t.assigned_to = @userId
-         ORDER BY t.due_date ASC`
-      );
-    return res.json(result.recordset);
+    const tasks = await query(
+      `SELECT t.*, u.name AS "assignedToName"
+       FROM tasks t
+       JOIN users u ON u.id = t.assigned_to
+       WHERE t.assigned_to = $1
+       ORDER BY t.due_date ASC`,
+      [req.user.id]
+    );
+    return res.json(tasks);
   }
 
-  const result = await pool
-    .request()
-    .input('orgId', sql.Int, req.user.organizationId)
-    .query(
-      `SELECT t.*, u.name AS assignedToName
-       FROM Tasks t
-       JOIN Users u ON u.id = t.assigned_to
-       WHERE t.organization_id = @orgId
-       ORDER BY t.due_date ASC`
-    );
-  res.json(result.recordset);
+  const tasks = await query(
+    `SELECT t.*, u.name AS "assignedToName"
+     FROM tasks t
+     JOIN users u ON u.id = t.assigned_to
+     WHERE t.organization_id = $1
+     ORDER BY t.due_date ASC`,
+    [req.user.organizationId]
+  );
+  res.json(tasks);
 }
 
 // Employee can update status of their own task. Org Admin can update any field of a task in their org.
 export async function updateTask(req, res) {
-  const pool = await getPool();
   const taskId = req.params.id;
-
-  const existing = await pool.request().input('id', sql.Int, taskId).query('SELECT * FROM Tasks WHERE id = @id');
-  const task = existing.recordset[0];
+  const existing = await query('SELECT * FROM tasks WHERE id = $1', [taskId]);
+  const task = existing[0];
   if (!task) return res.status(404).json({ message: 'Task not found' });
 
   if (req.user.role === 'employee') {
@@ -90,8 +71,7 @@ export async function updateTask(req, res) {
     if (!STATUSES.includes(status)) {
       return res.status(400).json({ message: `status must be one of ${STATUSES.join(', ')}` });
     }
-    await pool.request().input('id', sql.Int, taskId).input('status', sql.NVarChar, status)
-      .query('UPDATE Tasks SET status = @status WHERE id = @id');
+    await query('UPDATE tasks SET status = $1 WHERE id = $2', [status, taskId]);
     return res.json({ message: 'Task status updated' });
   }
 
@@ -107,19 +87,19 @@ export async function updateTask(req, res) {
     return res.status(400).json({ message: `status must be one of ${STATUSES.join(', ')}` });
   }
 
-  await pool
-    .request()
-    .input('id', sql.Int, taskId)
-    .input('title', sql.NVarChar, title ?? task.title)
-    .input('description', sql.NVarChar, description ?? task.description)
-    .input('priority', sql.NVarChar, priority ?? task.priority)
-    .input('dueDate', sql.Date, dueDate ?? task.due_date)
-    .input('status', sql.NVarChar, status ?? task.status)
-    .input('assignedTo', sql.Int, assignedTo ?? task.assigned_to)
-    .query(
-      `UPDATE Tasks SET title = @title, description = @description, priority = @priority,
-       due_date = @dueDate, status = @status, assigned_to = @assignedTo WHERE id = @id`
-    );
+  await query(
+    `UPDATE tasks SET title = $1, description = $2, priority = $3,
+     due_date = $4, status = $5, assigned_to = $6 WHERE id = $7`,
+    [
+      title ?? task.title,
+      description ?? task.description,
+      priority ?? task.priority,
+      dueDate ?? task.due_date,
+      status ?? task.status,
+      assignedTo ?? task.assigned_to,
+      taskId,
+    ]
+  );
 
   res.json({ message: 'Task updated' });
 }
