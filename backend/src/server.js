@@ -19,7 +19,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN || '')
 app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : '*' }));
 app.use(express.json());
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', allowedOrigins, rawCorsEnv: process.env.CORS_ORIGIN }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/organizations', organizationRoutes);
