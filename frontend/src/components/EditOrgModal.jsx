@@ -4,8 +4,8 @@ import LogoUploadField from './LogoUploadField';
 
 const inputClass = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500';
 
-export default function OrgFormModal({ onClose, onSubmit }) {
-  const [form, setForm] = useState({ name: '', type: 'Business', logoUrl: '', adminName: '', adminPhone: '', adminEmail: '', adminPassword: '' });
+export default function EditOrgModal({ organization, onClose, onSubmit }) {
+  const [form, setForm] = useState({ name: organization.name, type: organization.type || 'Business', logoUrl: organization.logo_url || '' });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -28,9 +28,9 @@ export default function OrgFormModal({ onClose, onSubmit }) {
   }
 
   return (
-    <Modal title="Add Organization" onClose={onClose}>
+    <Modal title="Edit Organization" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input className={inputClass} placeholder="Organization name (e.g. ABC School)" value={form.name} onChange={(e) => update('name', e.target.value)} required />
+        <input className={inputClass} placeholder="Organization name" value={form.name} onChange={(e) => update('name', e.target.value)} required />
         <select className={inputClass} value={form.type} onChange={(e) => update('type', e.target.value)}>
           <option>School</option>
           <option>College</option>
@@ -39,17 +39,10 @@ export default function OrgFormModal({ onClose, onSubmit }) {
         </select>
         <LogoUploadField value={form.logoUrl} onChange={(v) => update('logoUrl', v)} />
 
-        <hr className="border-slate-100" />
-        <p className="text-xs font-semibold text-slate-500 uppercase">Organization Admin</p>
-        <input className={inputClass} placeholder="Admin full name" value={form.adminName} onChange={(e) => update('adminName', e.target.value)} required />
-        <input className={inputClass} type="tel" placeholder="Admin mobile number (login ID)" value={form.adminPhone} onChange={(e) => update('adminPhone', e.target.value)} required />
-        <input className={inputClass} type="email" placeholder="Admin email (optional)" value={form.adminEmail} onChange={(e) => update('adminEmail', e.target.value)} />
-        <input className={inputClass} type="password" placeholder="Admin password" value={form.adminPassword} onChange={(e) => update('adminPassword', e.target.value)} required />
-
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button disabled={saving} className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg py-2 text-sm transition disabled:opacity-60">
-          {saving ? 'Creating...' : 'Create Organization'}
+          {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </form>
     </Modal>

@@ -6,7 +6,8 @@ dotenv.config();
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
-const sqlText = fs.readFileSync('sql/schema.sql', 'utf8');
+const file = process.argv[2] || 'sql/schema.sql';
+const sqlText = fs.readFileSync(file, 'utf8');
 await pool.query(sqlText);
-console.log('schema applied');
+console.log(`applied: ${file}`);
 await pool.end();

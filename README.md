@@ -48,11 +48,13 @@ npm run dev                 # starts app on http://localhost:5173
 
 ## 4. First login
 
-Log in with the Super Admin credentials from `backend/.env` (`SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD`), then:
+Login is by **mobile number + password** (email is optional, profile-only). Log in with the Super Admin credentials from `backend/.env` (`SUPER_ADMIN_PHONE` / `SUPER_ADMIN_PASSWORD`), then:
 
-1. Super Admin → **+ Add Organization** → creates the org + its Org Admin.
-2. Log in as that Org Admin → **+ Add Employee**, then **+ Create Task** and assign it.
+1. Super Admin → **+ Add Organization** → creates the org + its Org Admin (with logo/branding).
+2. Log in as that Org Admin (or use **Login as Org** from the Super Admin dashboard, no password needed) → **+ Add Employee**, then **+ Create Task** and assign it.
 3. Log in as the Employee → see the task on their dashboard, update status, or share it on WhatsApp.
+
+**Admin powers**: Super Admin can edit/suspend organizations, reset an Org Admin's password, or log in as any org without their password. Org Admin can reset any of their employees' passwords.
 
 ## WhatsApp sharing
 

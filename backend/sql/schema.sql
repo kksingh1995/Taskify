@@ -8,6 +8,7 @@ CREATE TABLE organizations (
     id              SERIAL PRIMARY KEY,
     name            VARCHAR(150)  NOT NULL,
     type            VARCHAR(50),                          -- School / College / Business / Other
+    logo_url        TEXT,                                  -- data URI or hosted image URL
     status          VARCHAR(20)   NOT NULL DEFAULT 'Active',  -- Active / Suspended
     created_by      INTEGER,                               -- super_admin user id
     created_at      TIMESTAMPTZ   NOT NULL DEFAULT now()
@@ -16,10 +17,10 @@ CREATE TABLE organizations (
 CREATE TABLE users (
     id              SERIAL PRIMARY KEY,
     name            VARCHAR(100)  NOT NULL,
-    email           VARCHAR(150)  NOT NULL UNIQUE,
+    email           VARCHAR(150)  UNIQUE,                  -- optional, not used for login
     password_hash   VARCHAR(255)  NOT NULL,
     role            VARCHAR(20)   NOT NULL,                -- super_admin / org_admin / employee
-    phone_number    VARCHAR(20),                           -- for WhatsApp share (include country code, e.g. 91XXXXXXXXXX)
+    phone_number    VARCHAR(20)   NOT NULL UNIQUE,          -- login id + WhatsApp share (include country code, e.g. 91XXXXXXXXXX)
     organization_id INTEGER       REFERENCES organizations(id),
     created_at      TIMESTAMPTZ   NOT NULL DEFAULT now()
 );

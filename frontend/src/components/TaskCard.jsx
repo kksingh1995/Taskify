@@ -12,29 +12,29 @@ export default function TaskCard({ task, showAssignee, assigneePhone, onStatusCh
   const overdue = task.due_date && new Date(task.due_date) < new Date().setHours(0, 0, 0, 0) && task.status !== 'Completed';
 
   return (
-    <div className={`bg-white border border-slate-200 border-l-4 ${BORDER_BY_PRIORITY[task.priority] || BORDER_BY_PRIORITY.Medium} rounded-xl p-4 flex flex-col gap-3`}>
+    <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 ${BORDER_BY_PRIORITY[task.priority] || BORDER_BY_PRIORITY.Medium} rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow`}>
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-slate-800">{task.title}</h3>
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100">{task.title}</h3>
         <PriorityBadge priority={task.priority} />
       </div>
 
-      {task.description && <p className="text-sm text-slate-500">{task.description}</p>}
+      {task.description && <p className="text-sm text-slate-500 dark:text-slate-400">{task.description}</p>}
 
-      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-        {showAssignee && <span className="px-2 py-1 bg-slate-100 rounded-full">👤 {task.assignedToName}</span>}
+      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+        {showAssignee && <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">👤 {task.assignedToName}</span>}
         {task.due_date && (
-          <span className={`px-2 py-1 rounded-full ${overdue ? 'bg-red-100 text-red-700 font-semibold' : 'bg-slate-100'}`}>
+          <span className={`px-2 py-1 rounded-full ${overdue ? 'bg-red-100 text-red-700 font-semibold dark:bg-red-900/40 dark:text-red-400' : 'bg-slate-100 dark:bg-slate-800'}`}>
             📅 {new Date(task.due_date).toLocaleDateString()} {overdue && '(Overdue)'}
           </span>
         )}
       </div>
 
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
         {onStatusChange ? (
           <select
             value={task.status}
             onChange={(e) => onStatusChange(task.id, e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-lg px-2 py-1 bg-white"
+            className="text-xs font-medium border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-800 dark:text-slate-100"
           >
             <option>Pending</option>
             <option>In Progress</option>

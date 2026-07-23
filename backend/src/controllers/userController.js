@@ -3,14 +3,14 @@ import { query } from '../config/db.js';
 
 // Org Admin only: create an employee inside their own organization
 export async function createEmployee(req, res) {
-  const { name, email, password, phone } = req.body;
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'name, email and password are required' });
+  const { name, phone, email, password } = req.body;
+  if (!name || !phone || !password) {
+    return res.status(400).json({ message: 'name, phone and password are required' });
   }
 
-  const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
+  const existing = await query('SELECT id FROM users WHERE phone_number = $1', [phone]);
   if (existing.length) {
-    return res.status(409).json({ message: 'A user with this email already exists' });
+    return res.status(409).json({ message: 'A user with this phone number already exists' });
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -18,7 +18,7 @@ export async function createEmployee(req, res) {
     `INSERT INTO users (name, email, password_hash, role, phone_number, organization_id)
      VALUES ($1, $2, $3, 'employee', $4, $5)
      RETURNING id, name, email, phone_number, created_at`,
-    [name, email, passwordHash, phone || null, req.user.organizationId]
+    [name, email || null, passwordHash, phone, req.user.organizationId]
   );
 
   res.status(201).json({ employee: employees[0] });
@@ -34,4 +34,22 @@ export async function listEmployees(req, res) {
     [req.user.organizationId]
   );
   res.json(employees);
+}
+
+// Org Admin only: reset a password for an employee in their own organization
+export async function resetEmployeePassword(req, res) {
+  const { newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ message: 'newPassword must be at least 6 characters' });
+  }
+
+  const employees = await query(
+    "SELECT id FROM users WHERE id = $1 AND organization_id = $2 AND role = 'employee'",
+    [req.params.id, req.user.organizationId]
+  );
+  if (!employees.length) return res.status(404).json({ message: 'Employee not found' });
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, req.params.id]);
+  res.json({ message: 'Employee password reset' });
 }

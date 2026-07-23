@@ -30,8 +30,8 @@ export default function EmployeeFormModal({ onClose, onSubmit }) {
     <Modal title="Add Employee" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
         <input className={inputClass} placeholder="Full name" value={form.name} onChange={(e) => update('name', e.target.value)} required />
-        <input className={inputClass} type="email" placeholder="Email" value={form.email} onChange={(e) => update('email', e.target.value)} required />
-        <input className={inputClass} placeholder="Phone (with country code, e.g. 91...) — for WhatsApp" value={form.phone} onChange={(e) => update('phone', e.target.value)} />
+        <input className={inputClass} type="tel" placeholder="Mobile number (login ID + WhatsApp)" value={form.phone} onChange={(e) => update('phone', e.target.value)} required />
+        <input className={inputClass} type="email" placeholder="Email (optional)" value={form.email} onChange={(e) => update('email', e.target.value)} />
         <input className={inputClass} type="password" placeholder="Password" value={form.password} onChange={(e) => update('password', e.target.value)} required />
 
         {error && <p className="text-sm text-red-600">{error}</p>}

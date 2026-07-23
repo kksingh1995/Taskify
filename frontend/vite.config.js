@@ -12,6 +12,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon-32.png', 'apple-touch-icon.png', 'icon-mark.svg'],
       manifest: {
+        id: '/',
         name: 'Taskify - Organize. Assign. Deliver.',
         short_name: 'Taskify',
         description: 'Role-based, multi-organization task management platform.',
