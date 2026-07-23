@@ -2,6 +2,8 @@
 
 Multi-organization, role-based task management platform.
 
+**Live**: https://taskify-kksingh1995.vercel.app (API: https://taskify-j7lf.onrender.com)
+
 **Roles**
 - **Super Admin** (you) — onboards organizations (schools, colleges, businesses) and their first Org Admin.
 - **Org Admin** — manages employees and tasks within their own organization only.
